@@ -7,19 +7,18 @@ import android.app.ListActivity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.provider.ContactsContract.CommonDataKinds.Note;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
-import android.widget.Toast;
 
 public class PracticeRoutine extends ListActivity { // implements LoaderManager.LoaderCallbacks<Cursor>{
 	private static final int ACTIVITY_CREATE = 0;
 	private static final int ACTIVITY_EDIT = 1;
 	
 	private static final int INSERT_ID = Menu.FIRST;
+	//TODO: Settings!
 	
 	private PracticeDbAdapter dbHelper;
 	private SimpleCursorAdapter adapter;
@@ -30,6 +29,8 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+    	//TODO: Make this view a slider on top (or something) that contains a metronome, 
+    	//a timer (maybe have a "start practicing" button), etc.
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_practice_routine);
         dbHelper = new PracticeDbAdapter(this);
@@ -42,6 +43,7 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     	View footerView = getLayoutInflater().inflate(R.layout.add_practice_item, null);
     	getListView().addFooterView(footerView);
     }
+    
     //Do this with a cursor loader, eventually
     private void fillData() {
     	itemsCursor = dbHelper.fetchAllRows();
@@ -115,7 +117,8 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     	
     	c.moveToPosition(position);
     	Intent i = new Intent(this, PieceDetail.class);
-    	String item_id = c.getString(c.getColumnIndexOrThrow(PracticeDbAdapter._ID));
+    	long item_id = Long.parseLong(c.getString(c.getColumnIndexOrThrow(PracticeDbAdapter._ID)));
+    	i.putExtra(PracticeDbAdapter._ID, item_id);
     	startActivity(i);
     }
      
