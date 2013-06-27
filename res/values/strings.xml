@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Practice Helper</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="add_item">Add New Piece</string>
+    <string name="list_add_link">+</string>
+    <string name="edit_title_string">Piece Name</string>
+    <string name="edit_type_string">Piece Type</string>
+    <string name="edit_time_string">Time to Spend</string>
+    <string-array name="types_array">
+        <item >Concert Piece</item>
+        <item >Etude</item>
+        <item >Warm-up</item>
+        
+    </string-array>
+
+</resources>
