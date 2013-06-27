@@ -43,5 +43,17 @@ public class AddItem extends Activity {
 				finish();
 			}
 		});
+		
+		Button cancelButton = (Button) findViewById(R.id.add_piece_cancel);
+		
+		cancelButton.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				setResult(RESULT_CANCELED, null);
+				finish();
+			}
+		});
 	}
 }

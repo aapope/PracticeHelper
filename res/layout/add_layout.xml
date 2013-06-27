@@ -45,5 +45,14 @@
         android:layout_below="@+id/add_piece_spinner"
         android:layout_marginTop="20dp"
         android:text="Save" />
+
+    <Button
+        android:id="@+id/add_piece_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/add_piece_confirm"
+        android:layout_alignBottom="@+id/add_piece_confirm"
+        android:layout_alignParentLeft="true"
+        android:text="Cancel" />
     
 </RelativeLayout>
