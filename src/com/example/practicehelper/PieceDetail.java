@@ -13,7 +13,7 @@ public class PieceDetail extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.piece_detail);
 		
-		long id = savedInstanceState.getLong(PracticeDbAdapter._ID);
+		long id = getIntent().getExtras().getLong(PracticeDbAdapter._ID);
 		dbHelper = new PracticeDbAdapter(this);
 		dbHelper.open();
 		

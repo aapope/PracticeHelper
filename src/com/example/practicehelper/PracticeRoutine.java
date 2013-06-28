@@ -7,9 +7,15 @@ import android.app.ListActivity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
@@ -23,7 +29,11 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
 	private PracticeDbAdapter dbHelper;
 	private SimpleCursorAdapter adapter;
 	private Cursor itemsCursor;
-	//static final String[] PROJECTION = new String[] {PracticeDbAdapter._ID, PracticeDbAdapter.KEY_TITLE, PracticeDbAdapter.KEY_TIME};
+	static final String[] PROJECTION = new String[] { 
+		PracticeDbAdapter._ID, 
+		PracticeDbAdapter.KEY_TITLE, 
+		PracticeDbAdapter.KEY_TIME
+	};
 	//static final String SELECTION = "(" + PracticeDbAdapter.KEY_TITLE + " != '')";
 	
 	
@@ -77,6 +87,65 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+    
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v,
+            ContextMenuInfo menuInfo) {
+        //super.onCreateContextMenu(menu, v, menuInfo);
+        //menu.add(0, DELETE_ID, 0, R.string.menu_delete);
+    	AdapterView.AdapterContextMenuInfo info;
+
+        // Tries to get the position of the item in the ListView that was long-pressed.
+        try {
+            // Casts the incoming data object into the type for AdapterView objects.
+            info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+        } catch (ClassCastException e) {
+            // If the menu object can't be cast, logs an error.
+            return;
+        }
+        Cursor cursor = (Cursor) getListAdapter().getItem(info.position);
+    	if (cursor == null) {
+    		return;
+    	}
+    	
+        MenuInflater inflater = getMenuInflater();
+    	inflater.inflate(R.menu.piece_list_context, menu);
+    	
+    	menu.setHeaderTitle(cursor.getString(cursor.getColumnIndex(PracticeDbAdapter.KEY_TITLE)));
+    	
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+    	AdapterContextMenuInfo info;
+    	try {
+    		info = (AdapterContextMenuInfo) item.getMenuInfo();
+    	} catch (ClassCastException e) {
+    		return false;
+    	}
+    	
+    	itemsCursor.moveToPosition(info.id);
+    	long item_id
+        switch(item.getItemId()) {
+            case R.id.delete_item:
+            	long item_id = Long.parseLong(itemsCursor.getString(itemsCursor.getColumnIndexOrThrow(PracticeDbAdapter._ID)));
+                dbHelper.deleteRow(item_id);
+                fillData();
+                return true;
+            case R.id.move_up:
+            	return true;
+            case R.id.move_down:
+            	return true;
+            case R.id.move_top:
+            	long item_id = Long.parseLong(itemsCursor.getString(itemsCursor.getColumnIndexOrThrow(PracticeDbAdapter._ID)));
+            	dbHelper.updateOrder(info.id, 0);
+            	return true;
+            case R.id.move_bottom:
+            	return true;
+            default:
+            	return false;
+        }
     }
     
     private void createItem() {
