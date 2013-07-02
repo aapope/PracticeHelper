@@ -32,8 +32,7 @@ public class PracticeRoutine extends ListActivity implements LoaderManager.Loade
 	static final String[] PROJECTION = new String[] { 
 		PieceTable._ID, 
 		PieceTable.COLUMN_TITLE,
-		PieceTable.COLUMN_TIME,
-		PieceTable.COLUMN_ORDER
+		PieceTable.COLUMN_TIME
 	};
 	//static final String SELECTION = "(" + PracticeDbAdapter.KEY_TITLE + " != '')";
 	
@@ -55,7 +54,7 @@ public class PracticeRoutine extends ListActivity implements LoaderManager.Loade
     }
 
     private void fillData() {
-    	String[] from = new String[] { PieceTable.COLUMN_TITLE, PieceTable.COLUMN_ORDER };
+    	String[] from = new String[] { PieceTable.COLUMN_TITLE, PieceTable.COLUMN_TIME };
     	int[] to = new int[] { R.id.practice_text, R.id.practice_time };
     	getLoaderManager().initLoader(0, null, this);
     	adapter = new SimpleCursorAdapter(this, R.layout.practice_item, null, from, to, 0);

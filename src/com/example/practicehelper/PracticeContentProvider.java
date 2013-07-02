@@ -29,7 +29,7 @@ public class PracticeContentProvider extends ContentProvider {
 	private static final String BASE_PATH_DETAIL = "details";
 	
 	public static final Uri CONTENT_URI_PIECE = Uri.parse("content://" + AUTHORITY + "/" + BASE_PATH_PIECE);
-	private static final Uri CONENT_URI_DETAIL = Uri.parse("content://" + AUTHORITY + "/" + BASE_PATH_DETAIL);
+	public static final Uri CONTENT_URI_DETAIL = Uri.parse("content://" + AUTHORITY + "/" + BASE_PATH_DETAIL);
 	
 	public static final String CONTENT_TYPE_PIECE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/pieces";
 	public static final String CONTENT_ITEM_TYPE_PIECE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/piece";
@@ -59,18 +59,33 @@ public class PracticeContentProvider extends ContentProvider {
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		//TODO: re-do order
+		//TODO: add other table support
 		int uriType = sURIMatcher.match(uri);
 		SQLiteDatabase sqlDB = database.getWritableDatabase();
 		int rowsDeleted = 0;
+		String id;
 		
 		switch (uriType) {
 		case PIECES:
 			//TODO: order for multiple?
 			rowsDeleted = sqlDB.delete(PieceTable.TABLE, selection, selectionArgs);
 			break;
+		case DETAILS:
+			rowsDeleted = sqlDB.delete(DetailsTable.TABLE, selection, selectionArgs);
+			break;
+		case DETAILS_ID:
+			id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsDeleted = sqlDB.delete(DetailsTable.TABLE, 
+						DetailsTable._ID + "=" + id, null);
+			} else {
+				rowsDeleted = sqlDB.delete(DetailsTable.TABLE, 
+						DetailsTable._ID + "=" + id
+						+ " and " + selection, selectionArgs);
+			}
+			break;
 		case PIECES_ID:
-			String id = uri.getLastPathSegment();
+			id = uri.getLastPathSegment();
 			if (TextUtils.isEmpty(selection)) {
 				//move everything below up
 				String setOthers = "UPDATE " + PieceTable.TABLE + " SET " + PieceTable.COLUMN_ORDER + "=" + PieceTable.COLUMN_ORDER + "-1 WHERE " 
@@ -80,7 +95,7 @@ public class PracticeContentProvider extends ContentProvider {
 				rowsDeleted = sqlDB.delete(PieceTable.TABLE, 
 						PieceTable._ID + "=" + id, null);
 				
-				
+				maxOrder--;
 			} else {
 				//TODO: maybe fix this?
 				return 0;
@@ -94,7 +109,6 @@ public class PracticeContentProvider extends ContentProvider {
 		}
 		
 		getContext().getContentResolver().notifyChange(uri, null);
-		maxOrder--;
 		return rowsDeleted;
 	}
 
@@ -105,47 +119,72 @@ public class PracticeContentProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		//first, complete the values!
-		values.put(PieceTable.COLUMN_DATEADDED, System.currentTimeMillis());
-		values.put(PieceTable.COLUMN_ORDER, maxOrder);
-		
 		int uriType = sURIMatcher.match(uri);
 		SQLiteDatabase sqlDB = database.getWritableDatabase();
 		long id = 0;
 		
 		switch (uriType) {
 		case PIECES:
+			//first, complete the values!
+			values.put(PieceTable.COLUMN_DATEADDED, System.currentTimeMillis());
+			values.put(PieceTable.COLUMN_ORDER, maxOrder);
+			
 			id = sqlDB.insert(PieceTable.TABLE, null, values);
-			break;
+			
+			maxOrder++;
+			
+			getContext().getContentResolver().notifyChange(uri, null);
+			return Uri.parse(BASE_PATH_PIECE + "/" + id);
+		case DETAILS:
+			id = sqlDB.insert(DetailsTable.TABLE, null, values);
+			
+			getContext().getContentResolver().notifyChange(uri, null);
+			return Uri.parse(BASE_PATH_DETAIL + "/" + id);
 		default:
 			throw new IllegalArgumentException("Unknown URI: " + uri + " Type: insert " + uriType);
 		}
-		
-		getContext().getContentResolver().notifyChange(uri, null);
-		maxOrder++;
-		return Uri.parse(BASE_PATH_PIECE + "/" + id);
 	}
 
 	@Override
 	public boolean onCreate() {
-		//TODO: Set up order
 		database = new PracticeDatabaseHelper(getContext());
+		setMax();
+		return false;
+	}
+	
+	public void setMax() {
 		SQLiteDatabase d = database.getReadableDatabase();
+		
 		Cursor orderC = d.rawQuery("SELECT MAX(" + PieceTable.COLUMN_ORDER + ") FROM " + PieceTable.TABLE, null);
+		
 		if (orderC != null) {
 			orderC.moveToFirst();
 			maxOrder = orderC.getInt(0) + 1;
 		} else {
 			maxOrder = 1;
 		}
-		return false;
 	}
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
+		int uriType = sURIMatcher.match(uri);
+		
+		switch (uriType) {
+		case PIECES: case PIECES_ID:
+			return queryPiece(uri, projection, selection, selectionArgs, sortOrder);
+		case DETAILS: case DETAILS_ID:
+			return queryDetail(uri, projection, selection, selectionArgs, sortOrder);
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri);
+		}
+	}
+	
+	private Cursor queryPiece(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		
 		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
-		checkColumns(projection);
+		checkColumns(projection, PieceTable.TABLE);
 		
 		queryBuilder.setTables(PieceTable.TABLE);
 		
@@ -167,9 +206,49 @@ public class PracticeContentProvider extends ContentProvider {
 		
 		return cursor;
 	}
+	
+	private Cursor queryDetail(Uri uri, String[] projection, String selection,
+			String[] selectionArgs, String sortOrder) {
+		
+		SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
+		checkColumns(projection, DetailsTable.TABLE);
+		
+		queryBuilder.setTables(DetailsTable.TABLE);
+		
+		int uriType = sURIMatcher.match(uri);
+		switch (uriType) {
+		case DETAILS:
+			break;
+		case DETAILS_ID:
+			queryBuilder.appendWhere(PieceTable._ID + "="
+					+ uri.getLastPathSegment());
+			break;
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri + " Type: query " + uriType);
+		}
+		
+		SQLiteDatabase db = database.getWritableDatabase();
+		Cursor cursor = queryBuilder.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+		cursor.setNotificationUri(getContext().getContentResolver(), uri);
+		
+		return cursor;
+	}
 
 	@Override
 	public int update(Uri uri, ContentValues values, String selection,
+			String[] selectionArgs) {
+		int uriType = sURIMatcher.match(uri);
+		switch (uriType) {
+		case PIECES: case PIECES_ID:
+			return updatePiece(uri, values, selection, selectionArgs);
+		case DETAILS: case DETAILS_ID:
+			return updateDetails(uri, values, selection, selectionArgs);
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri);
+		}
+	}
+	
+	private int updatePiece(Uri uri, ContentValues values, String selection,
 			String[] selectionArgs) {
 		int uriType = sURIMatcher.match(uri);
 		SQLiteDatabase sqlDB = database.getWritableDatabase();
@@ -244,15 +323,59 @@ public class PracticeContentProvider extends ContentProvider {
 		return rowsUpdated;
 	}
 	
-	private void checkColumns(String[] projection) {
-		String[] available = { PieceTable._ID, PieceTable.COLUMN_DATEADDED,
-				PieceTable.COLUMN_ORDER, PieceTable.COLUMN_TIME, PieceTable.COLUMN_TITLE,
-				PieceTable.COLUMN_TYPE };
+	public int updateDetails(Uri uri, ContentValues values, String selection,
+			String[] selectionArgs) {
+		int uriType = sURIMatcher.match(uri);
+		SQLiteDatabase sqlDB = database.getWritableDatabase();
+		int rowsUpdated = 0;
+		
+		switch (uriType) {
+		case DETAILS:
+			rowsUpdated = sqlDB.update(DetailsTable.TABLE, values, selection, selectionArgs);
+			break;
+		case DETAILS_ID:
+			String id = uri.getLastPathSegment();
+			if (TextUtils.isEmpty(selection)) {
+				rowsUpdated = sqlDB.update(DetailsTable.TABLE, 
+						values, 
+						DetailsTable._ID + "=" + id, 
+						null);
+			} else {
+				rowsUpdated = sqlDB.update(DetailsTable.TABLE,
+						values,
+						DetailsTable._ID + "=" + id
+						+ " and "
+						+ selection,
+						selectionArgs);
+			}
+			break;
+		default:
+			throw new IllegalArgumentException("Unknown URI: " + uri + " Type: update " + uriType);
+		}
+		
+		getContext().getContentResolver().notifyChange(uri, null);
+		return rowsUpdated;
+	}
+	
+	private void checkColumns(String[] projection, String table) {
+		String[] available;
+		if (table == PieceTable.TABLE) {
+			available = new String[] { PieceTable._ID, PieceTable.COLUMN_DATEADDED,
+					PieceTable.COLUMN_ORDER, PieceTable.COLUMN_TIME, PieceTable.COLUMN_TITLE,
+					PieceTable.COLUMN_TYPE };
+		} else if (table == DetailsTable.TABLE) {
+			available = new String[] { DetailsTable._ID, DetailsTable.COLUMN_PIECE_ID,
+				DetailsTable.COLUMN_MEASURE_RANGE, DetailsTable.COLUMN_TEMPO_CURRENT,
+				DetailsTable.COLUMN_TEMPO_TARGET, DetailsTable.COLUMN_DETAILS };
+		} else {
+			throw new IllegalArgumentException("Unknown table: " + table);
+		}
+		
 		if (projection != null) {
 			HashSet<String> requestedColumns = new HashSet<String>(Arrays.asList(projection));
 			HashSet<String> availableColumns = new HashSet<String>(Arrays.asList(available));
 			if (!availableColumns.containsAll(requestedColumns)) {
-				throw new IllegalArgumentException("Unknown columns in projection");
+				throw new IllegalArgumentException("Unknown columns in projection " + projection[1] + " " + table);
 			}
 		}
 	}
