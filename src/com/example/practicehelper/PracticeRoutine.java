@@ -92,7 +92,7 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v,
             ContextMenuInfo menuInfo) {
-        //super.onCreateContextMenu(menu, v, menuInfo);
+        /*//super.onCreateContextMenu(menu, v, menuInfo);
         //menu.add(0, DELETE_ID, 0, R.string.menu_delete);
     	AdapterView.AdapterContextMenuInfo info;
 
@@ -113,12 +113,12 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     	inflater.inflate(R.menu.piece_list_context, menu);
     	
     	menu.setHeaderTitle(cursor.getString(cursor.getColumnIndex(PracticeDbAdapter.KEY_TITLE)));
-    	
+    	*/
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-    	AdapterContextMenuInfo info;
+    	/*AdapterContextMenuInfo info;
     	try {
     		info = (AdapterContextMenuInfo) item.getMenuInfo();
     	} catch (ClassCastException e) {
@@ -145,7 +145,8 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
             	return true;
             default:
             	return false;
-        }
+        }*/
+    	return false;
     }
     
     private void createItem() {
