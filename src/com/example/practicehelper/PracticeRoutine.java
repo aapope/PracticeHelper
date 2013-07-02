@@ -4,10 +4,14 @@ package com.example.practicehelper;
 
 
 import android.app.ListActivity;
+import android.app.LoaderManager;
+import android.content.ContentValues;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
@@ -19,20 +23,17 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
-public class PracticeRoutine extends ListActivity { // implements LoaderManager.LoaderCallbacks<Cursor>{
+public class PracticeRoutine extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 	private static final int ACTIVITY_CREATE = 0;
 	private static final int ACTIVITY_EDIT = 1;
-	
 	private static final int INSERT_ID = Menu.FIRST;
-	//TODO: Settings!
-	
-	private PracticeDbAdapter dbHelper;
 	private SimpleCursorAdapter adapter;
 	private Cursor itemsCursor;
 	static final String[] PROJECTION = new String[] { 
-		PracticeDbAdapter._ID, 
-		PracticeDbAdapter.KEY_TITLE, 
-		PracticeDbAdapter.KEY_TIME
+		PieceTable._ID, 
+		PieceTable.COLUMN_TITLE,
+		PieceTable.COLUMN_TIME,
+		PieceTable.COLUMN_ORDER
 	};
 	//static final String SELECTION = "(" + PracticeDbAdapter.KEY_TITLE + " != '')";
 	
@@ -43,33 +44,22 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     	//a timer (maybe have a "start practicing" button), etc.
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_practice_routine);
-        dbHelper = new PracticeDbAdapter(this);
-        dbHelper.open();
         setFooter();
         fillData();
+        registerForContextMenu(getListView());
     }
 
     private void setFooter() {
     	View footerView = getLayoutInflater().inflate(R.layout.add_practice_item, null);
     	getListView().addFooterView(footerView);
     }
-    
-    //Do this with a cursor loader, eventually
+
     private void fillData() {
-    	itemsCursor = dbHelper.fetchAllRows();
-    	startManagingCursor(itemsCursor);
-    	
-    	String[] from = new String[] { PracticeDbAdapter.KEY_TITLE, PracticeDbAdapter.KEY_TIME};
+    	String[] from = new String[] { PieceTable.COLUMN_TITLE, PieceTable.COLUMN_ORDER };
     	int[] to = new int[] { R.id.practice_text, R.id.practice_time };
-    	adapter = new SimpleCursorAdapter(this, R.layout.practice_item, itemsCursor, from, to);
-    	//adapter = new SimpleCursorAdapter(this, R.layout.practice_item, null, from, to, 0);
+    	getLoaderManager().initLoader(0, null, this);
+    	adapter = new SimpleCursorAdapter(this, R.layout.practice_item, null, from, to, 0);
     	setListAdapter(adapter);
-    	//getLoaderManager().initLoader(0, null, this);
-    	
-    	/**ArrayList<String> lines = new ArrayList<String>();
-    	lines.add("line 1");
-    	lines.add("line 2");
-    	setListAdapter(new ArrayAdapter<String>(this, R.layout.practice_item, lines));**/
     }
     
     @Override
@@ -92,8 +82,7 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v,
             ContextMenuInfo menuInfo) {
-        //super.onCreateContextMenu(menu, v, menuInfo);
-        //menu.add(0, DELETE_ID, 0, R.string.menu_delete);
+        super.onCreateContextMenu(menu, v, menuInfo);
     	AdapterView.AdapterContextMenuInfo info;
 
         // Tries to get the position of the item in the ListView that was long-pressed.
@@ -104,6 +93,7 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
             // If the menu object can't be cast, logs an error.
             return;
         }
+        
         Cursor cursor = (Cursor) getListAdapter().getItem(info.position);
     	if (cursor == null) {
     		return;
@@ -112,7 +102,7 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
         MenuInflater inflater = getMenuInflater();
     	inflater.inflate(R.menu.piece_list_context, menu);
     	
-    	menu.setHeaderTitle(cursor.getString(cursor.getColumnIndex(PracticeDbAdapter.KEY_TITLE)));
+    	menu.setHeaderTitle(cursor.getString(cursor.getColumnIndex(PieceTable.COLUMN_TITLE)));
     	
     }
 
@@ -125,35 +115,44 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     		return false;
     	}
     	
-    	itemsCursor.moveToPosition(info.id);
-    	long item_id
+    	//use contentprovider to find the things of interest.
+    	Uri pieceUri = Uri.parse(PracticeContentProvider.CONTENT_URI_PIECE + "/" + info.id);
+    	ContentValues values;
         switch(item.getItemId()) {
             case R.id.delete_item:
-            	long item_id = Long.parseLong(itemsCursor.getString(itemsCursor.getColumnIndexOrThrow(PracticeDbAdapter._ID)));
-                dbHelper.deleteRow(item_id);
-                fillData();
-                return true;
+            	getContentResolver().delete(pieceUri, null, null);
+            	break;
             case R.id.move_up:
-            	return true;
+            	values = new ContentValues();
+            	values.put(PieceTable.COLUMN_ORDER, PracticeContentProvider.MOVE_UP);
+            	getContentResolver().update(pieceUri, values, null, null);
+            	break;
             case R.id.move_down:
-            	return true;
+            	values = new ContentValues();
+            	values.put(PieceTable.COLUMN_ORDER, PracticeContentProvider.MOVE_DOWN);
+            	getContentResolver().update(pieceUri, values, null, null);
+            	break;
             case R.id.move_top:
-            	long item_id = Long.parseLong(itemsCursor.getString(itemsCursor.getColumnIndexOrThrow(PracticeDbAdapter._ID)));
-            	dbHelper.updateOrder(info.id, 0);
-            	return true;
+            	values = new ContentValues();
+            	values.put(PieceTable.COLUMN_ORDER, PracticeContentProvider.MOVE_TOP);
+            	getContentResolver().update(pieceUri, values, null, null);
+            	break;
             case R.id.move_bottom:
-            	return true;
+            	values = new ContentValues();
+            	values.put(PieceTable.COLUMN_ORDER, PracticeContentProvider.MOVE_BOTTOM);
+            	getContentResolver().update(pieceUri, values, null, null);
+            	break;
             default:
             	return false;
         }
+        
+        fillData();
+        return true;
     }
     
     private void createItem() {
-    	Intent i = new Intent(this, AddItem.class);
-    	startActivityForResult(i, ACTIVITY_CREATE);
-        /**String noteName = "Note " + mNoteNumber++;
-        dbHelper.createRow(noteName, "", 15);
-        fillData();**/
+    	Intent i = new Intent(this, EditItem.class);
+    	startActivity(i);
     }
     
     public void createItem(View v) {
@@ -161,40 +160,18 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
     }
     
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-    	if (resultCode == RESULT_OK) {
-    		super.onActivityResult(requestCode, resultCode, intent);
-    		Bundle extras = intent.getExtras();
-    		switch(requestCode) {
-    		case ACTIVITY_CREATE:
-    			String title = extras.getString(PracticeDbAdapter.KEY_TITLE);
-    			String type = extras.getString(PracticeDbAdapter.KEY_TYPE);
-    			int time = Integer.parseInt(extras.getString(PracticeDbAdapter.KEY_TIME));
-    			dbHelper.createRow(title, type, time);
-    			fillData();
-    			break;
-    		case ACTIVITY_EDIT:
-    			break;
-    		}
-    	}
-    }
-    
-    @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
     	super.onListItemClick(l, v, position, id);
-    	Cursor c = itemsCursor;
-    	
-    	c.moveToPosition(position);
     	Intent i = new Intent(this, PieceDetail.class);
-    	long item_id = Long.parseLong(c.getString(c.getColumnIndexOrThrow(PracticeDbAdapter._ID)));
-    	i.putExtra(PracticeDbAdapter._ID, item_id);
+    	Uri pieceUri = Uri.parse(PracticeContentProvider.CONTENT_URI_PIECE + "/" + id);
+    	i.putExtra(PracticeContentProvider.CONTENT_ITEM_TYPE_PIECE, pieceUri);
     	startActivity(i);
     }
      
-    /**
 	@Override
 	public Loader<Cursor> onCreateLoader(int arg0, Bundle arg1) {
-		return new CursorLoader(this, ContactsContract.Data.CONTENT_URI, PROJECTION, SELECTION, null, null);
+		//maybe add a selection after projection?
+		return new CursorLoader(this, PracticeContentProvider.CONTENT_URI_PIECE, PROJECTION, null, null, PieceTable.COLUMN_ORDER);
 	}
 
 	@Override
@@ -205,6 +182,6 @@ public class PracticeRoutine extends ListActivity { // implements LoaderManager.
 	@Override
 	public void onLoaderReset(Loader<Cursor> arg0) {
 		adapter.swapCursor(null);
-	}**/
+	}
     
 }

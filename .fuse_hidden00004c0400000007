@@ -22,17 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.example.practicehelper.EditItem" >
-        </activity>
-        <activity android:name="com.example.practicehelper.PieceDetail" >
-        </activity>
-
-        <provider
-            android:name="com.example.practicehelper.PracticeContentProvider"
-            android:authorities="com.example.practicehelper.contentprovider"
-            android:enabled="true"
-            android:exported="true" >
-        </provider>
+        <activity android:name="AddItem"></activity>
     </application>
 
 </manifest>
