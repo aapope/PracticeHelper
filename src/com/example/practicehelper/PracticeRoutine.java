@@ -113,8 +113,7 @@ public class PracticeRoutine extends ListActivity implements LoaderManager.Loade
     	} catch (ClassCastException e) {
     		return false;
     	}
-    	
-    	//use contentprovider to find the things of interest.
+
     	Uri pieceUri = Uri.parse(PracticeContentProvider.CONTENT_URI_PIECE + "/" + info.id);
     	ContentValues values;
         switch(item.getItemId()) {

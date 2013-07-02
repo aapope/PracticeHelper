@@ -2,6 +2,34 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
-    
+
+    <TextView
+        android:id="@+id/detail_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="82dp"
+        android:layout_marginTop="34dp" />
+
+    <TextView
+        android:id="@+id/detail_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/detail_type"
+        android:layout_alignBottom="@+id/detail_type"
+        android:layout_marginLeft="43dp"
+        android:layout_toRightOf="@+id/detail_type"/>
+
+    <ListView
+        android:id="@+id/measure_range_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/detail_type"
+        android:layout_alignRight="@+id/detail_time"
+        android:layout_below="@+id/detail_type"
+        android:layout_marginTop="27dp"
+        android:orientation="vertical" />
+
 
 </RelativeLayout>
