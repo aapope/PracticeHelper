@@ -9,10 +9,12 @@ public class PieceDetail extends Activity {
 	//private PracticeDbAdapter dbHelper;
 	private Cursor pieceCursor;
 	private Uri pieceUri;
-	private static final String[] PROJECTION = { PieceTable._ID,
+	private static final String[] PIECE_PROJECTION = { PieceTable._ID,
 		PieceTable.COLUMN_TITLE, PieceTable.COLUMN_ORDER, PieceTable.COLUMN_TIME,
 		PieceTable.COLUMN_TYPE, PieceTable.COLUMN_DATEADDED };
-	
+	private static final String[] DETAIL_PROJECTION = { DetailsTable._ID,
+		DetailsTable.COLUMN_MEASURE_RANGE, DetailsTable.COLUMN_TEMPO_CURRENT,
+		DetailsTable.COLUMN_TEMPO_TARGET, DetailsTable.COLUMN_DETAILS };
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -28,7 +30,7 @@ public class PieceDetail extends Activity {
 	}
 	
 	private void fillData(Uri uri) {
-		pieceCursor = getContentResolver().query(uri, PROJECTION, null, null, null);
+		pieceCursor = getContentResolver().query(uri, PIECE_PROJECTION, null, null, null);
 		
 		if (pieceCursor != null) {
 			pieceCursor.moveToFirst();
